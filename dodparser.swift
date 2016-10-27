@@ -1,13 +1,49 @@
 #!/usr/bin/swift
+
 import Foundation
+
+func containerXMLData() -> Data {
+    let container = XMLElement(name: "container")
+    let root = XMLDocument(rootElement: container)
+    let version = XMLElement(kind: .attribute)
+    version.name = "version"
+    version.stringValue = "1.0"
+    container.addAttribute(version)
+
+    let namespace = XMLElement(kind: .attribute)
+    namespace.name = "xmlns"
+    namespace.stringValue = "urn:oasis:names:tc:opendocument:xmlns:container"
+    container.addAttribute(namespace)
+
+    let rootfiles = XMLElement(name: "rootfiles")
+    let rootfile = XMLElement(kind: .element, options: .nodeCompactEmptyElement)
+    rootfile.name = "rootfile"
+    let fullPath = XMLElement(kind: .attribute)
+    fullPath.name = "full-path"
+    fullPath.stringValue = "content.opf"
+    rootfile.addAttribute(fullPath)
+    let mediaType = XMLElement(kind: .attribute)
+    mediaType.name = "media-type"
+    mediaType.stringValue = "application/oebps-package+xml"
+    rootfile.addAttribute(mediaType)
+
+
+    rootfiles.addChild(rootfile)
+    container.addChild(rootfiles)
+
+    root.version = "1.0"
+    root.isStandalone = true
+
+    return root.xmlData(withOptions: Int(XMLNode.Options.nodePrettyPrint.rawValue))
+}
 
 let fm = FileManager.default
 
 let currentDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
 if fm.fileExists(atPath: currentDir.absoluteString) == false {
     try! fm.createDirectory(at: currentDir,
-                                        withIntermediateDirectories: true,
-                                        attributes: nil)
+                            withIntermediateDirectories: true,
+                            attributes: nil)
     dump("created directory: \(currentDir)")
 }
 
@@ -41,3 +77,10 @@ for i in 1...43 {
     dump("saving to: \(savePath)")
     try! data.write(to: savePath)
 }
+
+let metaInfDirPath = currentDir.appendingPathComponent("META-INF")
+dump("creating directory \(metaInfDirPath)")
+try! fm.createDirectory(at: metaInfDirPath, withIntermediateDirectories: false, attributes: nil)
+let metaInfFilePath = metaInfDirPath.appendingPathComponent("container.xml")
+dump("creating file \(metaInfFilePath)")
+try! containerXMLData().write(to: metaInfFilePath)
