@@ -37,6 +37,53 @@ func containerXMLData() -> Data {
     return root.xmlData(withOptions: Int(XMLNode.Options.nodePrettyPrint.rawValue))
 }
 
+func packageXMLData() -> Data {
+    let package = XMLElement(name: "package")
+    let root = XMLDocument(rootElement: package)
+    root.version = "1.0"
+    root.isStandalone = true
+    let version = XMLElement(kind: .attribute)
+    version.name = "version"
+    version.stringValue = "1.0"
+    version.kind
+    package.addAttribute(version)
+
+    let metadata = XMLElement(name: "metadata")
+    let title = XMLElement(name: "dc:title", stringValue: "dod")
+    let creator = XMLElement(name: "dc:creator", stringValue: "Richard Fabian")
+    metadata.addChild(title)
+    metadata.addChild(creator)
+
+    package.addChild(metadata)
+
+    let namespace = XMLElement(kind: .namespace)
+    namespace.name = ""
+    namespace.stringValue = "http://www.idpf.org/2007/opf"
+    package.addNamespace(namespace)
+
+    let manifest = XMLElement(name: "manifest")
+
+    func manifestItem(withName name: String, index: Int) -> XMLElement {
+        let item = XMLElement(name: "item")
+        if name.hasSuffix("png") {
+            item.setAttributesAs(["href": "images/\(name)", "media-type": "image/png", "id": "id\(index)"])
+        } else {
+            item.setAttributesAs(["href": "text/\(name)", "media-type": "application/xhtml+xml", "id": "id\(index)"])
+        }
+        return item
+    }
+
+    let img = manifestItem(withName: "20.png", index: 5)
+    let text = manifestItem(withName: "20.html", index: 10)
+
+    manifest.addChild(img)
+    manifest.addChild(text)
+
+    package.addChild(manifest)
+
+    return package.xmlData(withOptions: Int(XMLNode.Options.nodePrettyPrint.rawValue))
+}
+
 let fm = FileManager.default
 
 let currentDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
