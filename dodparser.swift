@@ -1,4 +1,4 @@
-#!/usr/bin/swift
+//#!/usr/bin/swift
 
 import Foundation
 
@@ -9,12 +9,12 @@ func containerXMLData() -> Data {
     version.name = "version"
     version.stringValue = "1.0"
     container.addAttribute(version)
-
+    
     let namespace = XMLElement(kind: .attribute)
     namespace.name = "xmlns"
     namespace.stringValue = "urn:oasis:names:tc:opendocument:xmlns:container"
     container.addAttribute(namespace)
-
+    
     let rootfiles = XMLElement(name: "rootfiles")
     let rootfile = XMLElement(kind: .element, options: .nodeCompactEmptyElement)
     rootfile.name = "rootfile"
@@ -26,18 +26,18 @@ func containerXMLData() -> Data {
     mediaType.name = "media-type"
     mediaType.stringValue = "application/oebps-package+xml"
     rootfile.addAttribute(mediaType)
-
-
+    
+    
     rootfiles.addChild(rootfile)
     container.addChild(rootfiles)
-
+    
     root.version = "1.0"
     root.isStandalone = true
-
+    
     return root.xmlData(withOptions: Int(XMLNode.Options.nodePrettyPrint.rawValue))
 }
 
-func packageXMLData() -> Data {
+func packageXMLData(withFileList fileList: Array<String>) -> Data {
     let package = XMLElement(name: "package")
     let root = XMLDocument(rootElement: package)
     root.version = "1.0"
@@ -47,42 +47,67 @@ func packageXMLData() -> Data {
     version.stringValue = "1.0"
     version.kind
     package.addAttribute(version)
-
+    
     let metadata = XMLElement(name: "metadata")
     let title = XMLElement(name: "dc:title", stringValue: "dod")
     let creator = XMLElement(name: "dc:creator", stringValue: "Richard Fabian")
     metadata.addChild(title)
     metadata.addChild(creator)
-
+    
     package.addChild(metadata)
-
+    
     let namespace = XMLElement(kind: .namespace)
     namespace.name = ""
     namespace.stringValue = "http://www.idpf.org/2007/opf"
     package.addNamespace(namespace)
-
+    
     let manifest = XMLElement(name: "manifest")
-
-    func manifestItem(withName name: String, index: Int) -> XMLElement {
-        let item = XMLElement(name: "item")
-        if name.hasSuffix("png") {
-            item.setAttributesAs(["href": "images/\(name)", "media-type": "image/png", "id": "id\(index)"])
-        } else {
-            item.setAttributesAs(["href": "text/\(name)", "media-type": "application/xhtml+xml", "id": "id\(index)"])
-        }
-        return item
+    
+    for i in 0..<fileList.count {
+        manifest.addChild(manifestItem(withName: fileList[i], index: i))
     }
-
-    let img = manifestItem(withName: "20.png", index: 5)
-    let text = manifestItem(withName: "20.html", index: 10)
-
-    manifest.addChild(img)
-    manifest.addChild(text)
-
+    
     package.addChild(manifest)
-
-    return package.xmlData(withOptions: Int(XMLNode.Options.nodePrettyPrint.rawValue))
+    
+    let itemrefs = manifest.children?.filter { child in
+        return child is XMLElement
+        } as! Array<XMLElement>
+    let ids = itemrefs.filter
+        { $0.attribute(forName: "media-type")?.stringValue == "application/xhtml" }
+        .flatMap { $0.attribute(forName: "id")?.stringValue }
+    let spine = createSpine(withItemrefs: ids)
+    package.addChild(spine)
+    
+    return root.xmlData(withOptions: Int(XMLNode.Options.nodePrettyPrint.rawValue))
 }
+
+func manifestItem(withName name: String, index: Int) -> XMLElement {
+    let item = XMLElement(name: "item")
+    if name.hasSuffix("png") {
+        item.setAttributesAs(["href": "images/\(name)", "media-type": "image/png", "id": "id\(index)"])
+    } else {
+        item.setAttributesAs(["href": "text/\(name)", "media-type": "application/xhtml+xml", "id": "id\(index)"])
+    }
+    return item
+}
+
+func createSpine(withItemrefs itemrefs: Array<String>) -> XMLElement {
+    let spine = XMLElement(name: "spine")
+    let toc = XMLElement(kind: .attribute)
+    toc.name = "toc"
+    toc.stringValue = "ncx"
+    spine.addChild(toc)
+    itemrefs.map { (item: String) -> XMLElement in
+        let element = XMLElement(name: "itemref")
+        let attribute = XMLElement(kind: .attribute)
+        attribute.name = "idref"
+        attribute.stringValue = item
+        return element
+        }.forEach { spine.addChild($0) }
+    
+    return spine
+}
+
 
 let fm = FileManager.default
 
@@ -98,7 +123,7 @@ let contents = try! fm.contentsOfDirectory(at: currentDir, includingPropertiesFo
 
 if contents.isEmpty == false {
     dump("removing \(contents.count) previous items")
-
+    
     for item in contents{
         try! fm.removeItem(at: item)
     }
