@@ -1,4 +1,4 @@
-//#!/usr/bin/swift
+#!/usr/bin/swift
 
 import Foundation
 
@@ -111,15 +111,15 @@ func createSpine(withItemrefs itemrefs: Array<String>) -> XMLElement {
 
 let fm = FileManager.default
 
-let currentDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
-if fm.fileExists(atPath: currentDir.absoluteString) == false {
-    try! fm.createDirectory(at: currentDir,
+let sourceDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("source", isDirectory: true)
+if fm.fileExists(atPath: sourceDir.absoluteString) == false {
+    try! fm.createDirectory(at: sourceDir,
                             withIntermediateDirectories: true,
                             attributes: nil)
-    dump("created directory: \(currentDir)")
+    dump("created directory: \(sourceDir)")
 }
 
-let contents = try! fm.contentsOfDirectory(at: currentDir, includingPropertiesForKeys: nil, options: [])
+let contents = try! fm.contentsOfDirectory(at: sourceDir, includingPropertiesForKeys: nil, options: [])
 
 if contents.isEmpty == false {
     dump("removing \(contents.count) previous items")
@@ -136,7 +136,7 @@ for i in 3...19 {
     let currentURL = URL(string: address.replacingCharacters(in: address.range(of: "{#0}")!, with: "\(i)"))!
     dump("loading: \(currentURL)")
     let data = try! Data(contentsOf: currentURL)
-    let savePath = currentDir.appendingPathComponent(currentURL.lastPathComponent)
+    let savePath = sourceDir.appendingPathComponent("text", isDirectory: true).appendingPathComponent(currentURL.lastPathComponent)
     dump("saving to: \(savePath)")
     try! data.write(to: savePath)
 }
@@ -145,14 +145,22 @@ for i in 1...43 {
     let currentImgURL = URL(string: imgAddress.replacingCharacters(in: imgAddress.range(of: "{#0}")!, with: "\(i)"))!
     dump("loading img: \(currentImgURL)")
     let data = try! Data(contentsOf: currentImgURL)
-    let savePath = currentDir.appendingPathComponent(currentImgURL.lastPathComponent)
+    let savePath = sourceDir.appendingPathComponent("images", isDirectory: true).appendingPathComponent(currentImgURL.lastPathComponent)
     dump("saving to: \(savePath)")
     try! data.write(to: savePath)
 }
 
-let metaInfDirPath = currentDir.appendingPathComponent("META-INF")
+let resultDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
+if fm.fileExists(atPath: resultDir.absoluteString) == false {
+    try! fm.createDirectory(at: resultDir,
+                            withIntermediateDirectories: true,
+                            attributes: nil)
+    dump("created directory: \(resultDir)")
+}
+
+let metaInfDirPath = resultDir.appendingPathComponent("META-INF")
 dump("creating directory \(metaInfDirPath)")
 try! fm.createDirectory(at: metaInfDirPath, withIntermediateDirectories: false, attributes: nil)
-let metaInfFilePath = metaInfDirPath.appendingPathComponent("container.xml")
+let metaInfFilePath = resultDir.appendingPathComponent("container.xml")
 dump("creating file \(metaInfFilePath)")
-try! containerXMLData().write(to: metaInfFilePath)
+try! containerXMLData().write(to: resultDir)
