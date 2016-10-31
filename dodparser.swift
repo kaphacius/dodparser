@@ -108,26 +108,40 @@ func createSpine(withItemrefs itemrefs: Array<String>) -> XMLElement {
     return spine
 }
 
+func checkDirExists(atPath path: URL) {
+    if fm.fileExists(atPath: path.absoluteString) == false {
+        try! fm.createDirectory(at: path,
+                                withIntermediateDirectories: true,
+                                attributes: nil)
+        dump("created directory: \(path)")
+    }
+}
+
+func clearDirectory(atPath path: URL) {
+    let contents = try! fm.contentsOfDirectory(at: path, includingPropertiesForKeys: nil, options: [])
+    
+    if contents.isEmpty == false {
+        dump("removing \(contents.count) items from \(path)")
+        
+        for item in contents{
+            try! fm.removeItem(at: item)
+        }
+    }
+}
+
 
 let fm = FileManager.default
 
 let sourceDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("source", isDirectory: true)
-if fm.fileExists(atPath: sourceDir.absoluteString) == false {
-    try! fm.createDirectory(at: sourceDir,
-                            withIntermediateDirectories: true,
-                            attributes: nil)
-    dump("created directory: \(sourceDir)")
-}
 
-let contents = try! fm.contentsOfDirectory(at: sourceDir, includingPropertiesForKeys: nil, options: [])
+checkDirExists(atPath: sourceDir)
+clearDirectory(atPath: sourceDir)
 
-if contents.isEmpty == false {
-    dump("removing \(contents.count) previous items")
-    
-    for item in contents{
-        try! fm.removeItem(at: item)
-    }
-}
+let textDir = sourceDir.appendingPathComponent("text")
+let imgDir = sourceDir.appendingPathComponent("images")
+
+checkDirExists(atPath: textDir)
+checkDirExists(atPath: imgDir)
 
 let address = "http://www.dataorienteddesign.com/dodmain/node{#0}.html"
 let imgAddress = "http://www.dataorienteddesign.com/dodmain/img{#0}.png"
@@ -151,16 +165,12 @@ for i in 1...43 {
 }
 
 let resultDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
-if fm.fileExists(atPath: resultDir.absoluteString) == false {
-    try! fm.createDirectory(at: resultDir,
-                            withIntermediateDirectories: true,
-                            attributes: nil)
-    dump("created directory: \(resultDir)")
-}
+checkDirExists(atPath: resultDir)
+clearDirectory(atPath: resultDir)
 
 let metaInfDirPath = resultDir.appendingPathComponent("META-INF")
 dump("creating directory \(metaInfDirPath)")
 try! fm.createDirectory(at: metaInfDirPath, withIntermediateDirectories: false, attributes: nil)
 let metaInfFilePath = resultDir.appendingPathComponent("container.xml")
 dump("creating file \(metaInfFilePath)")
-try! containerXMLData().write(to: resultDir)
+try! containerXMLData().write(to: metaInfFilePath)
