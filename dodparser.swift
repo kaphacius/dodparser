@@ -45,7 +45,6 @@ func packageXMLData(withFileList fileList: Array<String>) -> Data {
     let version = XMLElement(kind: .attribute)
     version.name = "version"
     version.stringValue = "1.0"
-    version.kind
     package.addAttribute(version)
     
     let metadata = XMLElement(name: "metadata")
@@ -137,8 +136,13 @@ let sourceDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathCompo
 checkDirExists(atPath: sourceDir)
 clearDirectory(atPath: sourceDir)
 
-let textDir = sourceDir.appendingPathComponent("text")
-let imgDir = sourceDir.appendingPathComponent("images")
+let resultDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
+
+checkDirExists(atPath: resultDir)
+clearDirectory(atPath: resultDir)
+
+let textDir = resultDir.appendingPathComponent("text")
+let imgDir = resultDir.appendingPathComponent("images")
 
 checkDirExists(atPath: textDir)
 checkDirExists(atPath: imgDir)
@@ -150,7 +154,7 @@ for i in 3...19 {
     let currentURL = URL(string: address.replacingCharacters(in: address.range(of: "{#0}")!, with: "\(i)"))!
     dump("loading: \(currentURL)")
     let data = try! Data(contentsOf: currentURL)
-    let savePath = sourceDir.appendingPathComponent("text", isDirectory: true).appendingPathComponent(currentURL.lastPathComponent)
+    let savePath = textDir.appendingPathComponent(currentURL.lastPathComponent)
     dump("saving to: \(savePath)")
     try! data.write(to: savePath)
 }
@@ -159,18 +163,19 @@ for i in 1...43 {
     let currentImgURL = URL(string: imgAddress.replacingCharacters(in: imgAddress.range(of: "{#0}")!, with: "\(i)"))!
     dump("loading img: \(currentImgURL)")
     let data = try! Data(contentsOf: currentImgURL)
-    let savePath = sourceDir.appendingPathComponent("images", isDirectory: true).appendingPathComponent(currentImgURL.lastPathComponent)
+    let savePath = imgDir.appendingPathComponent(currentImgURL.lastPathComponent)
     dump("saving to: \(savePath)")
     try! data.write(to: savePath)
 }
 
-let resultDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
-checkDirExists(atPath: resultDir)
-clearDirectory(atPath: resultDir)
-
 let metaInfDirPath = resultDir.appendingPathComponent("META-INF")
 dump("creating directory \(metaInfDirPath)")
 try! fm.createDirectory(at: metaInfDirPath, withIntermediateDirectories: false, attributes: nil)
-let metaInfFilePath = resultDir.appendingPathComponent("container.xml")
+let metaInfFilePath = metaInfDirPath.appendingPathComponent("container.xml")
 dump("creating file \(metaInfFilePath)")
 try! containerXMLData().write(to: metaInfFilePath)
+let textContents = try! fm.contentsOfDirectory(at: textDir, includingPropertiesForKeys: nil, options: [])
+let imgContents = try! fm.contentsOfDirectory(at: imgDir, includingPropertiesForKeys: nil, options: [])
+let packageFilePath = resultDir.appendingPathComponent("content.opf")
+dump("creating file \(packageFilePath)")
+try! packageXMLData(withFileList: textContents.map { $0.lastPathComponent } + imgContents.map {$0.lastPathComponent}).write(to: packageFilePath)
