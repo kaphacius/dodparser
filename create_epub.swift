@@ -50,10 +50,10 @@ func packageXMLData(withFileList fileList: Array<String>) -> Data {
     let metadata = XMLElement(name: "metadata")
     let title = XMLElement(name: "dc:title", stringValue: "dod")
     let creator = XMLElement(name: "dc:creator", stringValue: "Richard Fabian")
-    metadata.addChild(title)
-    metadata.addChild(creator)
+    //metadata.addChild(title)
+    //metadata.addChild(creator)
     
-    package.addChild(metadata)
+    //package.addChild(metadata)
     
     let namespace = XMLElement(kind: .namespace)
     namespace.name = ""
@@ -63,10 +63,10 @@ func packageXMLData(withFileList fileList: Array<String>) -> Data {
     let manifest = XMLElement(name: "manifest")
     
     for i in 0..<fileList.count {
-        manifest.addChild(manifestItem(withName: fileList[i], index: i))
+        //manifest.addChild(manifestItem(withName: fileList[i], index: i))
     }
     
-    package.addChild(manifest)
+    //package.addChild(manifest)
     
     let itemrefs = manifest.children?.filter { child in
         return child is XMLElement
@@ -95,14 +95,14 @@ func createSpine(withItemrefs itemrefs: Array<String>) -> XMLElement {
     let toc = XMLElement(kind: .attribute)
     toc.name = "toc"
     toc.stringValue = "ncx"
-    spine.addChild(toc)
+    //spine.addChild(toc)
     itemrefs.map { (item: String) -> XMLElement in
         let element = XMLElement(name: "itemref")
         let attribute = XMLElement(kind: .attribute)
         attribute.name = "idref"
         attribute.stringValue = item
         return element
-        }.forEach { spine.addChild($0) }
+    }//.forEach { spine.addChild($0) }
     
     return spine
 }
@@ -128,46 +128,11 @@ func clearDirectory(atPath path: URL) {
     }
 }
 
-
 let fm = FileManager.default
-
 let sourceDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("source", isDirectory: true)
-
-checkDirExists(atPath: sourceDir)
-clearDirectory(atPath: sourceDir)
-
 let resultDir = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("result", isDirectory: true)
-
-checkDirExists(atPath: resultDir)
-clearDirectory(atPath: resultDir)
-
 let textDir = resultDir.appendingPathComponent("text")
 let imgDir = resultDir.appendingPathComponent("images")
-
-checkDirExists(atPath: textDir)
-checkDirExists(atPath: imgDir)
-
-let address = "http://www.dataorienteddesign.com/dodmain/node{#0}.html"
-let imgAddress = "http://www.dataorienteddesign.com/dodmain/img{#0}.png"
-
-for i in 3...19 {
-    let currentURL = URL(string: address.replacingCharacters(in: address.range(of: "{#0}")!, with: "\(i)"))!
-    dump("loading: \(currentURL)")
-    let data = try! Data(contentsOf: currentURL)
-    let savePath = textDir.appendingPathComponent(currentURL.lastPathComponent)
-    dump("saving to: \(savePath)")
-    try! data.write(to: savePath)
-}
-
-for i in 1...43 {
-    let currentImgURL = URL(string: imgAddress.replacingCharacters(in: imgAddress.range(of: "{#0}")!, with: "\(i)"))!
-    dump("loading img: \(currentImgURL)")
-    let data = try! Data(contentsOf: currentImgURL)
-    let savePath = imgDir.appendingPathComponent(currentImgURL.lastPathComponent)
-    dump("saving to: \(savePath)")
-    try! data.write(to: savePath)
-}
-
 let metaInfDirPath = resultDir.appendingPathComponent("META-INF")
 dump("creating directory \(metaInfDirPath)")
 try! fm.createDirectory(at: metaInfDirPath, withIntermediateDirectories: false, attributes: nil)
@@ -179,3 +144,4 @@ let imgContents = try! fm.contentsOfDirectory(at: imgDir, includingPropertiesFor
 let packageFilePath = resultDir.appendingPathComponent("content.opf")
 dump("creating file \(packageFilePath)")
 try! packageXMLData(withFileList: textContents.map { $0.lastPathComponent } + imgContents.map {$0.lastPathComponent}).write(to: packageFilePath)
+
